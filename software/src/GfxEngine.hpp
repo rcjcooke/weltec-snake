@@ -67,22 +67,22 @@ public:
 
   // Update the refresh rate
   void updateRefreshRate() {
-    static unsigned long previousFrame = millis();
-    static float frameRate = 0;
+    static unsigned long sPreviousFrame = millis();
+    static float sFrameRate = 0;
 
     // Clear the frame rate
     mDisplay.setTextColor(BLACK);
     mDisplay.setCursor(0,0);
-    mDisplay.println(frameRate);
+    mDisplay.println(sFrameRate);
 
     // Calculate the frame rate
-    frameRate = 1000/(millis() - previousFrame);
-    previousFrame = millis();
+    sFrameRate = 1000/(millis() - sPreviousFrame);
+    sPreviousFrame = millis();
 
     // Draw the frame rate
     mDisplay.setTextColor(WHITE);
     mDisplay.setCursor(0,0);
-    mDisplay.println((int) frameRate);
+    mDisplay.println((int) sFrameRate);
     
     mDisplay.display();
   }
@@ -93,6 +93,7 @@ public:
   // Draw out a level from scratch
   void drawLevel(GameSquare** grid) {
     mDisplay.clearDisplay();
+    // Draw the game grid
     for (int x = 0; x <= LEVEL_GRID_WIDTH; x++) {
       for (int y = 0; y <= LEVEL_GRID_HEIGHT; y++) {
         switch (grid[x][y]) {
@@ -115,11 +116,31 @@ public:
 
   // The snake has moved - update it
   void drawSnakeUpdate(Location head, Location tail) {
-    if (mPreviousSnakeTail != tail) {
-      clearSnake(mPreviousSnakeTail.x, mPreviousSnakeTail.y);
-      mPreviousSnakeTail = tail;
+    static Location sPreviousSnakeTail;
+    if (tail != sPreviousSnakeTail) {
+      clearSnake(sPreviousSnakeTail.x, sPreviousSnakeTail.y);
+      sPreviousSnakeTail = tail;
     }
     drawSnake(head.x, head.y);
+  }
+
+  void drawScoreUpdate(uint8_t score) {
+    static uint8_t sPreviousScore = -1;
+    // Only update the score if it's changed
+    if (score != sPreviousScore) {
+      // Clear the score
+      mDisplay.setTextSize(1);
+      mDisplay.setTextColor(BLACK);
+      mDisplay.setCursor(0,0);
+      mDisplay.println("Caffeination scored so far: " + sPreviousScore);
+      // Draw the score bar
+      mDisplay.setTextSize(1);
+      mDisplay.setTextColor(WHITE);
+      mDisplay.setCursor(0,0);
+      mDisplay.println("Caffeination scored so far: " + score);
+      sPreviousScore = score;
+      mDisplay.display();
+    }
   }
 
 protected:
@@ -165,7 +186,6 @@ protected:
 private:
 
   Adafruit_SSD1306 mDisplay = Adafruit_SSD1306(-1);
-  Location mPreviousSnakeTail;
 
 };
 

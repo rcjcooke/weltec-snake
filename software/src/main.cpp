@@ -129,6 +129,7 @@ void loop() {
     case GameState::Playing:
       // Actions
       if (mStateFirstEntry) {
+        mGfxEngine.drawScoreUpdate(mGameEngine.getTotalScore());
         mGfxEngine.drawLevel(mGameEngine.getGameGrid());
       }
       if (isThereANewMoveDirection()) {
@@ -139,6 +140,7 @@ void loop() {
         // Though this is an action it may generate an event
         mGameState = mGameEngine.moveOneSquareAndCheck();
         mGfxEngine.drawSnakeUpdate(mGameEngine.getSnakeHead(), mGameEngine.getSnakeTail());
+        mGfxEngine.drawScoreUpdate(mGameEngine.getTotalScore());
       }
       // Other Events
       if (mGameState == GameState::WonLevel && mCurrentLevel == mNumberOfLevels - 1) {
