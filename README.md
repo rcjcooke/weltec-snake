@@ -127,6 +127,8 @@ Eagle component libraries for some of these components were sourced as follows:
 * Push button - https://github.com/sparkfun/SparkFun-Eagle-Libraries/blob/master/SparkFun-Switches.lbr
 
 ### Software
+A 3rd party LinkedList implementation was used. It can be found on GitHub at https://github.com/ivanseidel/LinkedList. It was included as a dependency using PlatformIO's library management mechanism.
+
 A library change had to be made to get it to work with the OLED display supplied. Specifically, in Adafruit_SSD1306.h, the appropriate display size had to be selected and the others commented out. The correct one was `#define SSD1306_128_64`.
 
 By default the I<sup>2</sup>C bus speed is fairly slow for graphics. To improve on this, in Adafruit_SSD1306.cpp, the `Wire` library include was replaced with `#include <i2c_t3.h>` to make additional Teensy specific I<sup>2</sup>C functions available. These were then used in `GfxEngine::begin()` as follows:
@@ -141,6 +143,8 @@ This sets the bus clock speed to 1.8Mhz and uses Direct Memory Access to communi
 In addition, the `platformio.ini` file was updated to include `board_build.f_cpu = 96000000`. This overclocks the Teensy CPU to 96Mhz. Although technically it is possible to overclock the Teensy to 120Mhz, the OLED display can't handle communication at higher rates than 1.8Mhz. See the Electronics implementation details for more discussion on this topic.
 
 ### Electronics
+The I<sup>2</sup>C address for the OLED display was pre-determined using some scanning code (https://playground.arduino.cc/Main/I2cScanner) as 0x3C.
+
 To try and improve the frame rate on the OLED display, the CPU frequency (and I<sup>2</sup>C bus speed) on the Teensy were increased in software. It was discovered however that we were limited to a 96Mhz CPU speed because the clock signal for the OLED display couldn't switch fast enough to cope above that. It was believed that this is because the pull-up resistors internal to the OLED display are too large to allow the clock signal to rise fast enough. Smaller resistors would result in more power wasted but since this isn't a concern in our case it was worth trying. However, although placing small external resistors in parallel to them does appear to improve the shape of the clock signal (much more square wave than shark tooth), thus in theory enabling faster clock speeds, the voltage level of the clock signal is half the expected voltage. In short, it doesn't help and the display doesn't seem to work above a 1.8Mhz bus speed.
 
 ### Hardware
@@ -150,3 +154,6 @@ To try and improve the frame rate on the OLED display, the CPU frequency (and I<
 ## Conclusions
 
 ## References
+
+* https://github.com/ivanseidel/LinkedList
+* https://www.weltec.ac.nz/assets/Uploads/Petone-campus-map-and-transport-info.pdf
