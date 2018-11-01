@@ -72,7 +72,7 @@ public:
 
     // Clear the frame rate
     mDisplay.setTextColor(BLACK);
-    mDisplay.setCursor(0,0);
+    mDisplay.setCursor(40,0);
     mDisplay.println(sFrameRate);
 
     // Calculate the frame rate
@@ -81,7 +81,7 @@ public:
 
     // Draw the frame rate
     mDisplay.setTextColor(WHITE);
-    mDisplay.setCursor(0,0);
+    mDisplay.setCursor(40,0);
     mDisplay.println((int) sFrameRate);
     
     mDisplay.display();
