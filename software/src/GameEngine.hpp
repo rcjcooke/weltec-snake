@@ -1,18 +1,20 @@
 #ifndef __GAMEENGINE_H_INCLUDED__
 #define __GAMEENGINE_H_INCLUDED__
 
-#define LEVEL_GRID_WIDTH 30
-#define LEVEL_GRID_HEIGHT 15
-
 #include <Arduino.h>
-#include <GameElements.hpp>
-#include <Level.hpp>
 #include <LinkedList.h>
+
+#include "GameElements.hpp"
+#include "Level.hpp"
 
 class GameEngine {
 
 public:
-  GameEngine();
+  GameEngine() {}
+
+  void resetGame() {
+    mTotalScore = 0;
+  }
 
   void setupLevel(Level level) {
     // Set up the walls and initial snake
@@ -25,7 +27,7 @@ public:
       mSnake.add(level.initialSnake()[i]);
     }
     mCurrentDirection = level.levelStartDirection();
-    mCurrentLocation = mSnake.get(mSnake.size() - 1);
+    mCurrentLocation = mSnake.get(0);
     setupCoffeeTarget(level.coffeeTarget());
   }
 
@@ -38,9 +40,7 @@ public:
   }
 
   void changeDirection(Direction direction) {
-    if (direction != Direction::Same) {
-      mCurrentDirection = direction;
-    }
+    mCurrentDirection = direction;
   }
 
   // Moves the snake one square, performs the checks and return the resulting game state
@@ -60,7 +60,8 @@ public:
         mCurrentLocation.x++;
         break;
     }
-    mSnake.add(Location(mCurrentLocation));
+    // Add the new head
+    mSnake.unshift(Location(mCurrentLocation));
 
     // Checks
     if (isSnakeOrWallAt(mCurrentLocation)) {
@@ -69,16 +70,36 @@ public:
     }
     if (!isThereCoffeeAt(mCurrentLocation)) {
       // Remove the tail of the snake (because the snake has moved and not extended)
-      Location tail = mSnake.shift();
+      Location tail = mSnake.pop();
       mGrid[tail.x][tail.y] = GameSquare::Empty;
       mNumberOfCoffees--;
+      mTotalScore++;
     }
     if (mNumberOfCoffees == 0) {
       // If we've managed to get all the coffees then we've won the level! :)
-      return GameState::Won;
+      return GameState::WonLevel;
     }
     // If we've got this far then we're all good to keep playing
     return GameState::Playing;
+  }
+
+  uint8_t getTotalScore() {
+    return mTotalScore;
+  }
+
+  /********************************
+   * Graphics Engine Access Methods
+   ********************************/
+  GameSquare** getGameGrid() {
+    return (GameSquare**) mGrid;
+  }
+
+  Location getSnakeHead() {
+    return mSnake.get(0);
+  }
+
+  Location getSnakeTail() {
+    return mSnake.get(mSnake.size() - 1);
   }
 
 protected:
@@ -100,11 +121,19 @@ protected:
   }
 
 private:
+
+  // The game grid
   GameSquare mGrid[LEVEL_GRID_WIDTH][LEVEL_GRID_HEIGHT];
+  // The snake body
   LinkedList<Location> mSnake;
+  // The number of coffees left to get on the current level
   uint8_t mNumberOfCoffees;
+  // The current location of the snake's head
   Location mCurrentLocation;
+  // The direction the snake will move next
   Direction mCurrentDirection;
+  // The total number of coffees drunk this game across all levels
+  uint8_t mTotalScore;
 };
 
 #endif // __GAMEENGINE_H_INCLUDED__

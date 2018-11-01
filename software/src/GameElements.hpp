@@ -1,10 +1,10 @@
 #ifndef __GAMEELEMENTS_H_INCLUDED__
 #define __GAMEELEMENTS_H_INCLUDED__
 
-#define LEVEL_GRID_WIDTH 30
-#define LEVEL_GRID_HEIGHT 15
+#include <stdint.h>
 
-#include <Arduino.h>
+#define LEVEL_GRID_WIDTH 64
+#define LEVEL_GRID_HEIGHT 29
 
 enum class GameSquare {
   Empty,
@@ -17,8 +17,7 @@ enum class Direction {
   Left,
   Right,
   Up,
-  Down,
-  Same
+  Down
 };
 
 enum class GameState {
@@ -26,13 +25,18 @@ enum class GameState {
   Playing,
   Paused,
   Died,
-  Won
+  WonLevel,
+  WonGame
 };
 
 class Location {
 public:
+  Location() {};
   Location(uint8_t x, uint8_t y) : x(x), y(y) {}
   Location(const Location& loc) : Location(loc.x, loc.y) {}
+
+  bool operator== (const Location& l) {return x == l.x && y == l.y;}
+  bool operator!= (const Location& l) {return !(*this == l);}
 
   uint8_t x;
   uint8_t y;
