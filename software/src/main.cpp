@@ -1,28 +1,44 @@
 #include <Arduino.h>
+#include <Bounce2.h>
 
 #include "GameEngine.hpp"
 #include "GfxEngine.hpp"
 #include "Levels.hpp"
 
-#define SHOW_FRAME_RATE true
+#define SHOW_FRAME_RATE false
 
+/************************
+ * Constants
+ ************************/
+static const uint8_t UP_BUTTON_PIN = 3;
+static const uint8_t DOWN_BUTTON_PIN = 2;
+static const uint8_t LEFT_BUTTON_PIN = 4;
+static const uint8_t RIGHT_BUTTON_PIN = 1;
+static const uint8_t PAUSE_BUTTON_PIN = 6;
+
+// Delay before accepting button state change for debouncing purposes
+static const unsigned long LOCKOUT_DELAY_MILLIS = 100;
+
+/************************
+ * Variables
+ ************************/
 // Core game objects
-GameEngine mGameEngine = GameEngine();
-GfxEngine mGfxEngine = GfxEngine();
+GameEngine gGameEngine = GameEngine();
+GfxEngine gGfxEngine = GfxEngine();
 
 // Level definitions and variables
-Level mLevels[] = {N_BLOCK};
-uint8_t mNumberOfLevels = 1;
-uint8_t mCurrentLevel = 0;
+Level gLevels[2] = {Level(), Level()};
+uint8_t gNumberOfLevels = 2;
+uint8_t gCurrentLevel = 0;
 
 // Game speed management variables
-unsigned long mGameMovePeriodMillis = 250;
-unsigned long mLastGameMoveTimeMillis = 0;
+unsigned long gGameMovePeriodMillis = 250;
+unsigned long gLastGameMoveTimeMillis = 0;
 
 // Game state management
-GameState mGameState = GameState::MainMenu;
-GameState mPreviousGameState = GameState::Died;
-bool mStateFirstEntry;
+GameState gGameState = GameState::MainMenu;
+GameState gPreviousGameState = GameState::Died;
+bool gStateFirstEntry;
 
 // Button variables
 enum class Button {
@@ -33,28 +49,79 @@ enum class Button {
   Pause,
   None
 };
-Button mLastButtonPressed = Button::None;
+
+class ButtonWrapper {
+public:
+  ButtonWrapper(const Button button, const uint8_t pin) : button(button), pin(pin) {}
+
+  void setup() {
+    pinMode(pin, INPUT_PULLDOWN);
+    debouncer.interval(LOCKOUT_DELAY_MILLIS);
+    debouncer.attach(pin);
+  }
+
+  const Button button;
+  const uint8_t pin;
+  Bounce debouncer = Bounce();
+};
+ButtonWrapper gButtons[] = {
+  ButtonWrapper(Button::Up, UP_BUTTON_PIN),
+  ButtonWrapper(Button::Down, DOWN_BUTTON_PIN),
+  ButtonWrapper(Button::Left, LEFT_BUTTON_PIN),
+  ButtonWrapper(Button::Right, RIGHT_BUTTON_PIN),
+  ButtonWrapper(Button::Pause, PAUSE_BUTTON_PIN)
+};
+Button gLastButtonPressed = Button::None;
 
 /*****************************
  * Constructors / Initialisers
  *****************************/
-// TODO Interrupt routines for buttons
+void setup() {
+  // Used for debug purposes
+  Serial.begin(115200);
+  
+  // Delay to give time to connect Serial interface if required
+  // delay(5000);
+  Serial.println("Initialised serial interface");
 
-void setup()   {
-  mGfxEngine.begin();
+  // Set up graphics engine
+  gGfxEngine.begin();
+  // Set up levels
+  gLevels[0].setup(T_BLOCK_LEVEL_MAP, T_BLOCK_DIRECTION, T_BLOCK_COFFEE_TARGET);
+  gLevels[1].setup(N_BLOCK_LEVEL_MAP, N_BLOCK_DIRECTION, N_BLOCK_COFFEE_TARGET);
+  // Set up buttons
+  for (int i=0; i<5; i++) {
+    gButtons[i].setup();
+  }
 }
 
 /***********************
  * Button Methods
  ***********************/
+// Determine which button was last pressed if any
+void updateLastButtonPressed() {
+  ButtonWrapper* mostRecentButtonPressed = &gButtons[0];
+  unsigned long minDuration = gButtons[0].debouncer.duration();
+  for (int i=1; i<5; i++) {
+    unsigned long duration = gButtons[i].debouncer.duration();
+    if (duration < minDuration) {
+      mostRecentButtonPressed = &gButtons[i];
+      minDuration = duration;
+    }
+  }
+  if (mostRecentButtonPressed->debouncer.rose()) {
+    gLastButtonPressed = mostRecentButtonPressed->button;
+  }
+}
+
 // Clears off any remaining buttons events
 void clearAllButtonPressEvents() {
-  mLastButtonPressed = Button::None;
+  gLastButtonPressed = Button::None;
 }
 
 // Checks to see if a button has been pressed and then clears off any remaining buttons events
 bool checkAndClearAnyButtonPressed() {
-  if (mLastButtonPressed != Button::None) {
+  if (gLastButtonPressed != Button::None) {
     clearAllButtonPressEvents();
     return true;
   } else {
@@ -64,23 +131,23 @@ bool checkAndClearAnyButtonPressed() {
 
 // Determines if one of the move buttons was pressed
 bool isThereANewMoveDirection() {
-  return mLastButtonPressed == Button::Up || mLastButtonPressed == Button::Down || mLastButtonPressed == Button::Left || mLastButtonPressed == Button::Right;
+  return gLastButtonPressed == Button::Up || gLastButtonPressed == Button::Down || gLastButtonPressed == Button::Left || gLastButtonPressed == Button::Right;
 }
 
 // Returns new Direction if there is one, otherwise NULL
 Direction determineNewMoveDirection() {
-  switch (mLastButtonPressed) {
+  switch (gLastButtonPressed) {
     case Button::Up:
-      mLastButtonPressed = Button::None;
+      gLastButtonPressed = Button::None;
       return Direction::Up;
     case Button::Down:
-      mLastButtonPressed = Button::None;
+      gLastButtonPressed = Button::None;
       return Direction::Down;
     case Button::Left:
-      mLastButtonPressed = Button::None;
+      gLastButtonPressed = Button::None;
       return Direction::Left;
     case Button::Right:
-      mLastButtonPressed = Button::None;
+      gLastButtonPressed = Button::None;
       return Direction::Right;
     default:
       // Shouldn't get here as use of this method should be bracketed by isThereANewMoveDirection
@@ -93,103 +160,117 @@ Direction determineNewMoveDirection() {
  ***********************/
 // Just keep looping, just keep looping, just keep looping, looping, looping
 void loop() {
+  // Manage buttons
+  for (int i=0; i<5; i++) {
+    gButtons[i].debouncer.update();
+  }
+  updateLastButtonPressed();
+  
+  // Detect first entries into a state
+  gStateFirstEntry = gGameState != gPreviousGameState;
+  gPreviousGameState = gGameState;
 
-  // Detect first entries into a state (for rendering efficiency)
-  mStateFirstEntry = mGameState != mPreviousGameState;
   // Main game state machine
-  switch (mGameState) {
+  switch (gGameState) {
 
     case GameState::MainMenu:
       // Actions
-      if (mStateFirstEntry) {
-        mGfxEngine.drawMainMenu();
-        mGameEngine.resetGame();
-        mGameEngine.setupLevel(mLevels[0]);
+      if (gStateFirstEntry) {
+        Serial.println("GameState::MainMenu firstEntry");
+        gGfxEngine.drawMainMenu();
+        gGameEngine.resetGame();
+        gGameEngine.setupLevel(&gLevels[0]);
       }
       // Events
       // Any button press starts game
       if (checkAndClearAnyButtonPressed()) {
-        mGameState = GameState::Playing;
+        gGameState = GameState::Playing;
       }
       break;
 
     case GameState::Paused:
       // Actions
-      if (mStateFirstEntry) {
+      if (gStateFirstEntry) {
+        Serial.println("GameState::Paused firstEntry");
         clearAllButtonPressEvents();
-        mGfxEngine.drawPauseMenu();
+        gGfxEngine.drawPauseMenu();
       }
       // Events
       // Any button press starts game
       if (checkAndClearAnyButtonPressed()) {
-        mGameState = GameState::Playing;
+        gGameState = GameState::Playing;
       }
       break;
 
     case GameState::Playing:
       // Actions
-      if (mStateFirstEntry) {
-        mGfxEngine.drawScoreUpdate(mGameEngine.getTotalScore());
-        mGfxEngine.drawLevel(mGameEngine.getGameGrid());
+      if (gStateFirstEntry) {
+        Serial.println("GameState::Playing firstEntry");
+        gGfxEngine.drawLevel(gGameEngine.getGameGrid());
+        gGfxEngine.setInitialSnakeTail(gGameEngine.getSnakeTail());
+        gGfxEngine.drawScoreUpdate(gGameEngine.getTotalScore(), true);
       }
       if (isThereANewMoveDirection()) {
-        mGameEngine.changeDirection(determineNewMoveDirection());
+        gGameEngine.changeDirection(determineNewMoveDirection());
       }
-      if (millis() - mLastGameMoveTimeMillis > mGameMovePeriodMillis) {
-        mLastGameMoveTimeMillis = millis();
+      if (millis() - gLastGameMoveTimeMillis > gGameMovePeriodMillis) {
+        gLastGameMoveTimeMillis = millis();
         // Though this is an action it may generate an event
-        mGameState = mGameEngine.moveOneSquareAndCheck();
-        mGfxEngine.drawSnakeUpdate(mGameEngine.getSnakeHead(), mGameEngine.getSnakeTail());
-        mGfxEngine.drawScoreUpdate(mGameEngine.getTotalScore());
+        gGameState = gGameEngine.moveOneSquareAndCheck();
+        gGfxEngine.drawSnakeUpdate(gGameEngine.getSnakeHead(), gGameEngine.getSnakeTail());
+        gGfxEngine.drawScoreUpdate(gGameEngine.getTotalScore(), false);
       }
       // Other Events
-      if (mGameState == GameState::WonLevel && mCurrentLevel == mNumberOfLevels - 1) {
-        mGameState = GameState::WonGame;
+      if (gGameState == GameState::WonLevel && gCurrentLevel == gNumberOfLevels - 1) {
+        gGameState = GameState::WonGame;
       }
-      if (mGameState == GameState::Playing && mLastButtonPressed == Button::Pause) {
+      if (gGameState == GameState::Playing && gLastButtonPressed == Button::Pause) {
         clearAllButtonPressEvents();
-        mGameState = GameState::Paused;
+        gGameState = GameState::Paused;
       }
       break;
 
     case GameState::Died:
       // Actions
-      if (mStateFirstEntry) {
-        mGfxEngine.drawDiedScreen(mGameEngine.getTotalScore());
+      if (gStateFirstEntry) {
+        Serial.println("GameState::Died firstEntry");
+        gGfxEngine.drawDiedScreen(gGameEngine.getTotalScore());
       }
       // Events
       if (checkAndClearAnyButtonPressed()) {
-        mGameState = GameState::MainMenu;
+        gGameState = GameState::MainMenu;
       }
       break;
 
     case GameState::WonLevel:
       // Actions
-      if (mStateFirstEntry) {
-        mCurrentLevel++;
-        mGfxEngine.drawWonLevelScreen();
-        mGameEngine.setupLevel(mLevels[mCurrentLevel]);
+      if (gStateFirstEntry) {
+        Serial.println("GameState::WonLevel firstEntry");
+        gCurrentLevel++;
+        gGfxEngine.drawWonLevelScreen();
+        gGameEngine.setupLevel(&gLevels[gCurrentLevel]);
       }
       // Events
       if (checkAndClearAnyButtonPressed()) {
-        mGameState = GameState::Playing;
+        gGameState = GameState::Playing;
       }
       break;
 
     case GameState::WonGame:
       // Actions
-      if (mStateFirstEntry) {
-        mGfxEngine.drawWonGameScreen();
+      if (gStateFirstEntry) {
+        Serial.println("GameState::WonGame firstEntry");
+        gGfxEngine.drawWonGameScreen();
       }
       // Events
       if (checkAndClearAnyButtonPressed()) {
-        mGameState = GameState::MainMenu;
+        gGameState = GameState::MainMenu;
       }
       break;
 
   }
 
   // Some frame rate information if we want it
-  if (SHOW_FRAME_RATE) mGfxEngine.updateRefreshRate();
+  if (SHOW_FRAME_RATE) gGfxEngine.updateRefreshRate();
 
 }

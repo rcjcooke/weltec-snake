@@ -52,6 +52,14 @@ Additional more detailed requirements:
 
 ### Electronics
 
+The breadboard design can be seen below:
+
+![Breadboard](./media/breadboard.png)
+
+The schematic for this setup is simple and can be seen below:
+
+![Schematic](./media/schematic.png)
+
 ### Software
 The core game loop executes a finite state machine. The states are encoded in the `GameState` enum and are:
 * MainMenu
@@ -110,17 +118,21 @@ Game menus were created as monochrome BitMaps in Paint and then converted into C
 
 ### Hardware
 
+The hardware is designed to be very easy to create. The components are off-the-shelf buttons and a small display. The only hardware created for this project is a simple 3D printed plastic overlay. The buttons used don't stay on breadboard particularly well so the plastic case was designed to keep them in place. It also conveniently serves to encase the buttons and display and hide the wiring.
+
+The design was created in AutoDesk Fusion 360 and the archive file is available in the `hardware` directory. The final design looks like the image below:
+
+![Case Rendering](./media/case.png)
+
 ## Implementation
 Overall the implementation was relatively trivial. The small number of problems encountered are outlined in detail below.
 
 ### Components / BoM
-| Supplier | Supplier Part # | # | Description            | MNF Part #    |
-|:---------|:---------------:|---|:-----------------------|:--------------|
-|          |                 | 1 | Teensy 3.2             |               |
-|          |                 | 8 | 340 Ohm Resistor       |               |
-|          |                 | 4 | 1k Ohm Resistor        |               |
-|          |                 | 4 | 10k Ohm Resistor       |               |
-|          |                 | 5 | Button                 |               |
+| Supplier | Supplier Part # | # | Description                 | MNF Part #    |
+|:---------|:---------------:|---|:----------------------------|:--------------|
+|          |                 | 1 | Teensy 3.2                  |               |
+|          |                 | 1 | SSD1306 128x64 OLED Display |               |
+|          |                 | 5 | Momentary touch Button      |               |
 
 Eagle component libraries for some of these components were sourced as follows:
 * Teensy - https://forum.pjrc.com/threads/24006-Eagle-library-for-MK20DX128VLH5?p=71944&viewfull=1#post71944
@@ -148,6 +160,11 @@ The I<sup>2</sup>C address for the OLED display was pre-determined using some sc
 To try and improve the frame rate on the OLED display, the CPU frequency (and I<sup>2</sup>C bus speed) on the Teensy were increased in software. It was discovered however that we were limited to a 96Mhz CPU speed because the clock signal for the OLED display couldn't switch fast enough to cope above that. It was believed that this is because the pull-up resistors internal to the OLED display are too large to allow the clock signal to rise fast enough. Smaller resistors would result in more power wasted but since this isn't a concern in our case it was worth trying. However, although placing small external resistors in parallel to them does appear to improve the shape of the clock signal (much more square wave than shark tooth), thus in theory enabling faster clock speeds, the voltage level of the clock signal is half the expected voltage. In short, it doesn't help and the display doesn't seem to work above a 1.8Mhz bus speed.
 
 ### Hardware
+The Fusion 360 body was exported as STL and sliced to G-code for 3D printing. Both the STL and the G-code file can also be found in the `hardware` directory. Some features of the design required a 0.1mm precision which required the design had to be sliced quite finely (at 0.1mm) to put together the G-code. Although it would have been preferable from a finished product quality standpoint to slice it at half that (0.05mm), the 3D printer used for the print couldn't achieve that level of precision. The final printed overlay can be seen in the image below:
+
+![Overlay Photo](./media/overlay.png)
+
+TODO: Did it achieve the requirement
 
 ## Testing
 

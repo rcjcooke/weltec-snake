@@ -16,19 +16,41 @@ public:
     mTotalScore = 0;
   }
 
-  void setupLevel(Level level) {
+  void setupLevel(Level* level) {
+    // Memory management
+    if (mGrid != nullptr) {
+      if (INFO) Serial.println("GameEngine::setupLevel(): Cleaning up game grid");
+      for (int i=0; i<LEVEL_GRID_WIDTH; i++) delete mGrid[i];
+      delete mGrid;
+    }
+    if (INFO) Serial.println("GameEngine::setupLevel(): Allocating new game grid");
+    
+    mGrid = new GameSquare*[LEVEL_GRID_WIDTH];
+    for (int i=0; i<LEVEL_GRID_WIDTH; i++) mGrid[i] = new GameSquare[LEVEL_GRID_HEIGHT];
+    
+    if (INFO) Serial.println("GameEngine::setupLevel(): Clearing off snake");
+    mSnake.clear();
+    
     // Set up the walls and initial snake
+    if (INFO) Serial.println("GameEngine::setupLevel(): Setting up walls");
     for (int x = 0; x < LEVEL_GRID_WIDTH; x++) {
       for (int y = 0; y < LEVEL_GRID_HEIGHT; y++) {
-        mGrid[x][y] = level.levelGrid()[x][y];
+        mGrid[x][y] = level->levelGrid()[x][y];
+        if (DEBUG) Serial.printf("Grid: %d,%d: %p:%s -> %p:%s\r\n", x, y, (void*) &level->levelGrid()[x][y], translateGameSquare(level->levelGrid()[x][y]), (void*) &mGrid[x][y], translateGameSquare(mGrid[x][y]));
       }
     }
-    for (int i=0; i<level.snakeLength(); i++) {
-      mSnake.add(level.initialSnake()[i]);
+    if (INFO) Serial.println("GameEngine::setupLevel(): Setting up initial snake");
+    for (int i=0; i<level->snakeLength(); i++) {
+      mSnake.add(Location(level->initialSnake()[i]));
+      if (DEBUG) { 
+        char buffer[10];
+        mSnake.get(i).toString(buffer);
+        Serial.printf("Snake: %d: %s\r\n", i, buffer);
+      }
     }
-    mCurrentDirection = level.levelStartDirection();
+    mCurrentDirection = level->levelStartDirection();
     mCurrentLocation = mSnake.get(0);
-    setupCoffeeTarget(level.coffeeTarget());
+    setupCoffeeTarget(level->coffeeTarget());
   }
 
   bool isThereCoffeeAt(Location loc) {
@@ -68,15 +90,21 @@ public:
       // We've hit a wall or the snake
       return GameState::Died;
     }
-    if (!isThereCoffeeAt(mCurrentLocation)) {
+    if (isThereCoffeeAt(mCurrentLocation)) {
+      // We've scored some caffeine! :)
+      if (INFO) Serial.printf("Got some coffee. New score: %d\r\n", mTotalScore);
+      mNumberOfCoffees--;
+      mTotalScore++;
+    } else {
       // Remove the tail of the snake (because the snake has moved and not extended)
       Location tail = mSnake.pop();
       mGrid[tail.x][tail.y] = GameSquare::Empty;
-      mNumberOfCoffees--;
-      mTotalScore++;
     }
+    // There is now a snake at this location so record it
+    mGrid[mCurrentLocation.x][mCurrentLocation.y] = GameSquare::Snake;
+
+    // If we've managed to get all the coffees then we've won the level! :)
     if (mNumberOfCoffees == 0) {
-      // If we've managed to get all the coffees then we've won the level! :)
       return GameState::WonLevel;
     }
     // If we've got this far then we're all good to keep playing
@@ -122,10 +150,13 @@ protected:
 
 private:
 
+  static const bool INFO = true;
+  static const bool DEBUG = false;
+
   // The game grid
-  GameSquare mGrid[LEVEL_GRID_WIDTH][LEVEL_GRID_HEIGHT];
+  GameSquare** mGrid = nullptr;
   // The snake body
-  LinkedList<Location> mSnake;
+  LinkedList<Location> mSnake = LinkedList<Location>();
   // The number of coffees left to get on the current level
   uint8_t mNumberOfCoffees;
   // The current location of the snake's head

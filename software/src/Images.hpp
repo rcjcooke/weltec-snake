@@ -1,7 +1,7 @@
 #ifndef __IMAGES_H_INCLUDED__
 #define __IMAGES_H_INCLUDED__
 
-#include <pgmspace.h>
+#include <Arduino.h>
 
 // 'MainMenu', 128x64px
 static const unsigned char MAIN_MENU_BMP [] PROGMEM = {
