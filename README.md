@@ -30,23 +30,22 @@ All dependencies are defined in the platformio.ini file and are managed by Platf
 ## Requirements
 Develop an embedded system based game of your choice, including the following components and design paradigms:
 
-* Application logic is based on a Finite State Machine (enum + switch... case...)
-* All components listed below are an integral part of your system (you can use more):
-  * Buttons as needed
-  * Teensy 3.2
-  * Resistors as needed
-  * Breadboard + Jumper Wires
-  * 128x64 OLED Display SSD1306 - I<sup>2</sup>C-Version
-  * 10k Potentiometer
+1. Application logic is based on a Finite State Machine (enum + switch... case...)
+2. All components listed below are an integral part of your system (you can use more):
+    * Buttons as needed
+    * Teensy 3.2
+    * Resistors as needed
+    * Breadboard + Jumper Wires
+    * 128x64 OLED Display SSD1306: I<sup>2</sup>C-Version
 
 Additional more detailed requirements:
 
-* Implement a start-, pause-, end-screen and the actual game
-* Display a player score (game-screen and end-screen)
-* Implement debouncing of your button(s)
-* Design and Implementation as a state-machine
-* Feel free to use the Adafruit libraries: Adafruit_SSD1306 and Adafruit_GFX
-* Follow a systematic design process
+3. Implement a start-, pause-, end-screen and the actual game
+4. Display a player score (game-screen and end-screen)
+5. Implement debouncing of your button(s)
+6. Design and Implementation as a state-machine
+7. Feel free to use the Adafruit libraries: Adafruit_SSD1306 and Adafruit_GFX
+8. Follow a systematic design process
 
 ## Design / Architecture
 
@@ -164,9 +163,19 @@ The Fusion 360 body was exported as STL and sliced to G-code for 3D printing. Bo
 
 ![Overlay Photo](./media/overlay.png)
 
-TODO: Did it achieve the requirement
-
 ## Testing
+
+Requirements based testing was conducted as follows:
+
+1. **Passed**: the enum / switch / case based Finite State Machine is implemented in the main `void loop()` function in `main.cpp`.
+2. **Passed**: The required components are all integral parts of the game.
+3. **Passed**: Start, Pause, End-screen and actual game are all implemented. The screens themselves can be seen below:
+
+![Start Screen](./media/MainMenu.bmp) ![Pause Screen](./media/PauseMenu.bmp) ![Game Over Screen](./media/GameOver.bmp)
+
+![In-game screenshot](./media/gameScreenshot.jpg)
+
+
 
 ## Conclusions
 

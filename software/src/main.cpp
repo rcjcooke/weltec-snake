@@ -180,6 +180,7 @@ void loop() {
         gGfxEngine.drawMainMenu();
         gGameEngine.resetGame();
         gGameEngine.setupLevel(&gLevels[0]);
+        gCurrentLevel = 0;
       }
       // Events
       // Any button press starts game
