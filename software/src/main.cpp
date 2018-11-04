@@ -19,6 +19,9 @@ static const uint8_t PAUSE_BUTTON_PIN = 6;
 // Delay before accepting button state change for debouncing purposes
 static const unsigned long LOCKOUT_DELAY_MILLIS = 100;
 
+// Used for Serial logging
+static const bool INFO = false;
+
 /************************
  * Variables
  ************************/
@@ -77,12 +80,12 @@ Button gLastButtonPressed = Button::None;
  * Constructors / Initialisers
  *****************************/
 void setup() {
-  // Used for debug purposes
+  // Used for debug purposes only
   Serial.begin(115200);
   
   // Delay to give time to connect Serial interface if required
   // delay(5000);
-  Serial.println("Initialised serial interface");
+  if (INFO) Serial.println("Initialised serial interface");
 
   // Set up graphics engine
   gGfxEngine.begin();
@@ -176,7 +179,7 @@ void loop() {
     case GameState::MainMenu:
       // Actions
       if (gStateFirstEntry) {
-        Serial.println("GameState::MainMenu firstEntry");
+        if (INFO) Serial.println("GameState::MainMenu firstEntry");
         gGfxEngine.drawMainMenu();
         gGameEngine.resetGame();
         gGameEngine.setupLevel(&gLevels[0]);
@@ -192,7 +195,7 @@ void loop() {
     case GameState::Paused:
       // Actions
       if (gStateFirstEntry) {
-        Serial.println("GameState::Paused firstEntry");
+        if (INFO) Serial.println("GameState::Paused firstEntry");
         clearAllButtonPressEvents();
         gGfxEngine.drawPauseMenu();
       }
@@ -206,7 +209,7 @@ void loop() {
     case GameState::Playing:
       // Actions
       if (gStateFirstEntry) {
-        Serial.println("GameState::Playing firstEntry");
+        if (INFO) Serial.println("GameState::Playing firstEntry");
         gGfxEngine.drawLevel(gGameEngine.getGameGrid());
         gGfxEngine.setInitialSnakeTail(gGameEngine.getSnakeTail());
         gGfxEngine.drawScoreUpdate(gGameEngine.getTotalScore(), true);
@@ -234,7 +237,7 @@ void loop() {
     case GameState::Died:
       // Actions
       if (gStateFirstEntry) {
-        Serial.println("GameState::Died firstEntry");
+        if (INFO) Serial.println("GameState::Died firstEntry");
         gGfxEngine.drawDiedScreen(gGameEngine.getTotalScore());
       }
       // Events
@@ -246,7 +249,7 @@ void loop() {
     case GameState::WonLevel:
       // Actions
       if (gStateFirstEntry) {
-        Serial.println("GameState::WonLevel firstEntry");
+        if (INFO) Serial.println("GameState::WonLevel firstEntry");
         gCurrentLevel++;
         gGfxEngine.drawWonLevelScreen();
         gGameEngine.setupLevel(&gLevels[gCurrentLevel]);
@@ -260,7 +263,7 @@ void loop() {
     case GameState::WonGame:
       // Actions
       if (gStateFirstEntry) {
-        Serial.println("GameState::WonGame firstEntry");
+        if (INFO) Serial.println("GameState::WonGame firstEntry");
         gGfxEngine.drawWonGameScreen();
       }
       // Events
