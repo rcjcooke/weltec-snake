@@ -16,13 +16,13 @@ The easiest way to upload it to the Teensy is to open the `software` folder in V
 ### Folder structure
 The following file and folder structure has been used in this repository:
 
-* datasheets - Relevant datasheets for this project
-* electronics - The EAGLE and Fritzing schematics and image exports
-* software - The microcontroller code as a PlatformIO project.
-* hardware - The CAD model 3D printer files for the physical casing
-* media - Images for the README and those used in creating the game graphics
-* README.md - This file
-* LICENSE - The re-use and re-distribution license
+* `datasheets` - Relevant datasheets for this project
+* `electronics` - The EAGLE and Fritzing schematics and image exports
+* `software` - The microcontroller code as a PlatformIO project.
+* `hardware` - The CAD model and 3D printer files for the physical casing
+* `media` - Images for the README and those used in creating the game graphics
+* `README.md` - This file
+* `LICENSE` - The re-use and re-distribution license
 
 ### Dependencies
 All dependencies are defined in the platformio.ini file and are managed by Platform IO. No external dependencies exist.
@@ -218,8 +218,16 @@ Button gLastButtonPressed = Button::None;
 Testing the game itself uncovered a number of defects which have all been resolved. Most of the issues were a result of memory management and memory scope problems. There are no remaining defects that I'm aware of.
 
 ## Conclusions
+Using a Finite State Machine as the core logic for the game structure did simplify the code and make it easier to read and comprehend.
+
+Given more time, a number of additional game enhancements could be added:
+* Sounds - a simple piezo speaker would allow sound effects to be added
+* Additional levels to cover other blocks in WelTec
+* Create a PCB for the electronics and mount in a much smaller enclosed case with it's own power supply
+* Co-op game mode to play with the same game simultaneously with another device over Wi-fi or simple serial cable hookup
+* Change to a colour and/or larger OLED screen to improve graphics - though this may actually be detrimental to game play 
 
 ## References
 
-* https://github.com/ivanseidel/LinkedList
-* https://www.weltec.ac.nz/assets/Uploads/Petone-campus-map-and-transport-info.pdf
+* Wellington Institute of Technology. (2018, 11 1). Petone Campus Info. Retrieved from WelTec: https://www.weltec.ac.nz/assets/Uploads/Petone-campus-map-and-transport-info.pdf
+
