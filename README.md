@@ -70,7 +70,7 @@ The core game loop executes a finite state machine. The states are encoded in th
 
 The state transition diagram for this can be seen below:
 
-![State Transition Diagram](./media/STD.png)
+![State Transition Diagram](./media/StateTransitionDiagram.png)
 
 The game structure is a simple grid where each square has a state based on what the square contains. This could be Empty, Wall, Coffee or Snake. The collision logic simply determines whether the currentely occupied square for the head of the snake corresponds to a grid square state that is Wall or Snake and if so the player loses the game.
 
@@ -161,9 +161,11 @@ To try and improve the frame rate on the OLED display, the CPU frequency (and I<
 ### Hardware
 The Fusion 360 body was exported as STL and sliced to G-code for 3D printing. Both the STL and the G-code file can also be found in the `hardware` directory. Some features of the design required a 0.1mm precision which required the design had to be sliced quite finely (at 0.1mm) to put together the G-code. Although it would have been preferable from a finished product quality standpoint to slice it at half that (0.05mm), the 3D printer used for the print couldn't achieve that level of precision. The final printed overlay can be seen in the image below:
 
-![Overlay Photo](./media/overlay.png)
+![Overlay Photo](./media/OverlayPhoto.JPG)
 
 ## Testing
+
+### Acceptance Tests
 
 Requirements based testing was conducted as follows:
 
@@ -173,9 +175,47 @@ Requirements based testing was conducted as follows:
 
 ![Start Screen](./media/MainMenu.bmp) ![Pause Screen](./media/PauseMenu.bmp) ![Game Over Screen](./media/GameOver.bmp)
 
-![In-game screenshot](./media/gameScreenshot.jpg)
+4. **Passed**: The score can be seen in the two screenshots below:
 
+![In-game screenshot](./media/GameScreenshot.jpg)
+![Game over screenshot](./media/GameOverScreenshot.jpg)
 
+5. **Passed**: Button debouncing code can be found in `main.cpp`:
+
+```c++
+class ButtonWrapper {
+public:
+  ButtonWrapper(const Button button, const uint8_t pin) : button(button), pin(pin) {}
+
+  void setup() {
+    pinMode(pin, INPUT_PULLDOWN);
+    debouncer.interval(LOCKOUT_DELAY_MILLIS);
+    debouncer.attach(pin);
+  }
+
+  const Button button;
+  const uint8_t pin;
+  Bounce debouncer = Bounce();
+};
+ButtonWrapper gButtons[] = {
+  ButtonWrapper(Button::Up, UP_BUTTON_PIN),
+  ButtonWrapper(Button::Down, DOWN_BUTTON_PIN),
+  ButtonWrapper(Button::Left, LEFT_BUTTON_PIN),
+  ButtonWrapper(Button::Right, RIGHT_BUTTON_PIN),
+  ButtonWrapper(Button::Pause, PAUSE_BUTTON_PIN)
+};
+Button gLastButtonPressed = Button::None;
+```
+
+6. **Passed**: As per Requirement 1, the state machine can be found in the `void loop()` function in `main.cpp`. It is not listed here has it's too long.
+7. **Passed**: Libraries used. Dependencies specified in `platformio.ini`. In addition, the Bounce2 and LinkedList libraries were also used.
+8. **Passed**: A systematic design process was followed based iteratively on the following stages:
+    * Design
+    * Implementation
+    * Test
+
+### Game Testing
+Testing the game itself uncovered a number of defects which have all been resolved. Most of the issues were a result of memory management and memory scope problems. There are no remaining defects that I'm aware of.
 
 ## Conclusions
 
